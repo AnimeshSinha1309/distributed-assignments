@@ -90,14 +90,14 @@ int main(int argc, char **argv) {
     int end = ((g.m + numprocs - 1) / numprocs) * (rank + 1);
     if (end > g.m)
         end = g.m;
-    cout << "Markers: " << start << ' ' << end << endl;
 
     /* It's coloring time */
-    while (true) {
+    for (int _ = 0; _ < 100; _++) {
         for (int i = start; i < end; i++) {
             if (g.c[i] != -1)
                 continue;
             set<int> colors_used;
+            g.c[i] = 0;
             for (int neighbor : g.g[i]) {
                 if (neighbor < i && g.c[neighbor] == -1) {
                     g.c[i] = -1;
@@ -111,7 +111,6 @@ int main(int argc, char **argv) {
         }
         MPI_Send(&g.c[0], g.m, MPI_INT, MASTER_PROCESS, PUSH_TASK,
                  MPI_COMM_WORLD);
-        cout << rank << " Coloring " << g.c;
 
         if (rank == MASTER_PROCESS) {
             for (int proc = 0; proc < numprocs; proc++) {
@@ -119,7 +118,6 @@ int main(int argc, char **argv) {
                 MPI_Status status;
                 MPI_Recv(&update[0], g.m, MPI_INT, proc, PUSH_TASK,
                          MPI_COMM_WORLD, &status);
-                cout << proc << " recv: " << update;
                 for (int i = 0; i < g.m; i++) {
                     if (g.c[i] == -1)
                         g.c[i] = update[i];
