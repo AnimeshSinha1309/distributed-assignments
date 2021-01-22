@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <fstream>
 #include <set>
 #include <string>
 #include <vector>
@@ -71,17 +72,22 @@ int main(int argc, char **argv) {
     double t_start = MPI_Wtime();
     double answer = 0.0;
 
+    ifstream fin;
     int n, m;
-    if (rank == MASTER_PROCESS)
-        cin >> n >> m;
+    if (rank == MASTER_PROCESS) {
+        fin.open(argv[1]);
+        fin >> n >> m;
+    }
     MPI_Bcast(&n, 1, MPI_INT, MASTER_PROCESS, MPI_COMM_WORLD);
     MPI_Bcast(&m, 1, MPI_INT, MASTER_PROCESS, MPI_COMM_WORLD);
     vector<int> u(m), v(m);
-    if (rank == MASTER_PROCESS)
+    if (rank == MASTER_PROCESS) {
         for (int i = 0; i < m; i++) {
-            cin >> u[i] >> v[i];
+            fin >> u[i] >> v[i];
             u[i]--, v[i]--;
         }
+        fin.close();
+    }
     MPI_Bcast(&u[0], m, MPI_INT, MASTER_PROCESS, MPI_COMM_WORLD);
     MPI_Bcast(&v[0], m, MPI_INT, MASTER_PROCESS, MPI_COMM_WORLD);
     Graph g(n, m, u, v);
@@ -131,7 +137,13 @@ int main(int argc, char **argv) {
     }
 
     if (rank == MASTER_PROCESS) {
-        cout << g.c;
+        ofstream fout;
+        fout.open(argv[2]);
+        fout << g.m << "\n";
+        for (auto el : g.c)
+            fout << (el + 1) << ' ';
+        fout << endl;
+        fout.close();
     }
 
     /* Compute the time taken and print the answer */

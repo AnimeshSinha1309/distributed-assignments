@@ -1,9 +1,10 @@
 /* MPI Program Template */
 
+#include <algorithm>
 #include <cstdio>
+#include <fstream>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 #include "mpi.h"
 
@@ -12,24 +13,9 @@ using namespace std;
 #define PUSH_TASK 2001
 #define MASTER_PROCESS 0
 
-template <typename Type>
-istream &operator>>(istream &in, vector<Type> &vec) {
-   int n = vec.size();
-   for (int i = 0; i < n; i++)
-       in >> vec[i];
-   return in;
-}
-template <typename Type>
-ostream &operator<<(ostream &out, vector<Type> &vec) {
-    for (auto val : vec)
-        out << val << " ";
-    out << endl;
-    return out;
-}
-
-void send_vector(vector<int> v, int proc_id, int sz=-1, int st=-1) {
+void send_vector(vector<int> v, int proc_id, int sz = -1, int st = -1) {
     int size = sz == -1 ? v.size() : sz;
-    int* address = st == -1 ? &v[0] : &v[st];
+    int *address = st == -1 ? &v[0] : &v[st];
     MPI_Send(&size, 1, MPI_INT, proc_id, PUSH_TASK, MPI_COMM_WORLD);
     MPI_Send(address, size, MPI_INT, proc_id, PUSH_TASK, MPI_COMM_WORLD);
 }
@@ -44,7 +30,24 @@ vector<int> recv_vector(int proc_id) {
     return v;
 }
 
-int main(int argc, char** argv) {
+void quick_sort(vector<int> &v, int l, int r) {
+    if (l < r) {
+        int anchor = v[r - 1];
+        int idx = l;
+        for (int i = l; i < r; i++) {
+            if (v[i] < anchor) {
+                swap(v[i], v[idx]);
+                idx++;
+            }
+        }
+        swap(v[r - 1], v[idx]);
+        quick_sort(v, l, idx);
+        quick_sort(v, idx + 1, r);
+    }
+    return;
+}
+
+int main(int argc, char **argv) {
     int rank, numprocs;
 
     /* start up MPI */
@@ -61,10 +64,13 @@ int main(int argc, char** argv) {
     int n = 0;
     if (rank == MASTER_PROCESS) {
         /* take the inputs on master */
-        cin >> n;
+        ifstream fin;
+        fin.open(argv[1]);
+        fin >> n;
         vector<int> arr(n);
         for (auto &el : arr)
-            cin >> el;
+            fin >> el;
+        fin.close();
         /* distribute a portion of the bector to each child process */
         int CHUNKSIZE = (n + numprocs - 1) / numprocs;
         for (int proc_id = 0; proc_id < numprocs; proc_id++) {
@@ -76,7 +82,7 @@ int main(int argc, char** argv) {
 
     /* sort the received the vector */
     vector<int> vec = recv_vector(MASTER_PROCESS);
-    sort(vec.begin(), vec.end());
+    quick_sort(vec, 0, vec.size());
     send_vector(vec, MASTER_PROCESS);
 
     if (rank == MASTER_PROCESS) {
@@ -91,14 +97,20 @@ int main(int argc, char** argv) {
         for (int i = 0; i < n; i++) {
             int pos = -1;
             for (int j = 0; j < numprocs; j++) {
-                if (pos == -1 || merger[j][pointer[j]] < merger[pos][pointer[pos]])
+                if (pos == -1 ||
+                    merger[j][pointer[j]] < merger[pos][pointer[pos]])
                     pos = j;
             }
             ans.push_back(merger[pos][pointer[pos]]);
             pointer[pos]++;
         }
 
-        cout << ans;
+        ofstream fout;
+        fout.open(argv[2]);
+        for (int el : ans)
+            fout << el << " ";
+        fout << "\n";
+        fout.close();
     }
 
     /* Compute the time taken and print the answer */
@@ -109,7 +121,7 @@ int main(int argc, char** argv) {
                MPI_COMM_WORLD);
 
     if (rank == MASTER_PROCESS) {
-        printf("Total time (s): %f\n", maxTime);
+        cout << "Total time (s): " << maxTime << endl;
     }
 
     /* shut down MPI */

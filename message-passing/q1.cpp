@@ -1,9 +1,12 @@
 /* MPI Program Template */
 
-#include <stdio.h>
-#include <string.h>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 #include "mpi.h"
+using namespace std;
+
 typedef long long int ll;
 
 #define PUSH_TASK 2001
@@ -29,7 +32,10 @@ int main(int argc, char **argv) {
 
     if (rank == MASTER_PROCESS) {
         int n = 0;
-        scanf("%d", &n);
+        ifstream fin;
+        fin.open(argv[1]);
+        fin >> n;
+        fin.close();
 
         /* distribute a portion of the bector to each child process */
         int NUMBERS_PER_PROCESS = (n + numprocs - 1) / numprocs;
@@ -64,8 +70,11 @@ int main(int argc, char **argv) {
                MPI_COMM_WORLD);
 
     if (rank == MASTER_PROCESS) {
-        printf("%lf\n", answer);
-        // printf("Total time (s): %f\n", maxTime);
+        ofstream fout;
+        fout.open(argv[2]);
+        fout << answer << "\n";
+        cout << "Total time (s): " << maxTime << endl;
+        fout.close();
     }
 
     /* shut down MPI */
