@@ -1,6 +1,6 @@
--module(distance).
+-module('2018113001_2').
 
--export([run/2]).
+-export([main/1, proc/1, run/1]).
 
 % Read the input data from the file
 
@@ -96,7 +96,85 @@ writeLines(Device, Distances, CurrentNodeID) ->
 	   writeLines(Device, Tail, CurrentNodeID + 1)
     end.
 
-run(InputFile, OutputFile) ->
+main(Args) ->
+    [InputFile, OutputFile] = Args,
     Input = readFile(InputFile),
     Distances = bellmanFord(Input),
+    writeFile(OutputFile, Distances, 1).
+
+% Distributed Bellman Ford Algorithm
+
+relaxProcess(Process, Distances) ->
+    Process ! {dist, Distances},
+    receive {relaxed, NewDistances} -> NewDistances end,
+    BestDistances = lists:zipwith(fun (X, Y) -> min(X, Y)
+				  end,
+				  Distances, NewDistances),
+    BestDistances.
+
+relaxAllProcesses(Processes, Distances) ->
+    if Processes == [] -> Distances;
+       true ->
+	   [Head | Tail] = Processes,
+	   NewDistances = relaxProcess(Head, Distances),
+	   relaxAllProcesses(Tail, NewDistances)
+    end.
+
+repeatSolve(Processes, Distances, N) ->
+    RelaxedDistances = relaxAllProcesses(Processes,
+					 Distances),
+    if N > 1 ->
+	   repeatSolve(Processes, RelaxedDistances, N - 1);
+       true -> RelaxedDistances
+    end.
+
+% Create and pass around edge list
+
+distributeEdges([], _Edges) -> ok;
+distributeEdges(_Processes, []) -> ok;
+distributeEdges(Processes, Edges) ->
+    if length(Edges) > 0 ->
+	   SubSize = length(Edges) div length(Processes),
+	   [ThisProcess | NextProcesses] = Processes,
+	   {TheseEdges, NextEdges} = lists:split(SubSize, Edges),
+	   ThisProcess ! {edges, TheseEdges},
+	   distributeEdges(NextProcesses, NextEdges);
+       true -> done
+    end.
+
+% Create and wait for nodes
+
+proc(ParentID) ->
+    receive
+      {edges, EdgeList} ->
+	  relaxationHandler(ParentID, EdgeList)
+    end.
+
+relaxationHandler(ParentID, Edges) ->
+    receive
+      {dist, Distances} ->
+	  NewDistances = relaxAllEdges(Edges, Distances),
+	  ParentID ! {relaxed, NewDistances},
+	  relaxationHandler(ParentID, Edges)
+    end.
+
+% Maintain the server
+
+runDistribution(Graph) ->
+    NumNodes = Graph#graph.procs,
+    Edges = Graph#graph.edges,
+    Processes = [spawn(?MODULE, proc, [self()])
+		 || _ID <- lists:seq(1, NumNodes)],
+    distributeEdges(Processes, Edges),
+    ValN = Graph#graph.n,
+    NodeS = Graph#graph.source,
+    InitialDistances = initializeDistances(ValN, NodeS),
+    Distances = repeatSolve(Processes, InitialDistances,
+			    ValN),
+    Distances.
+
+run(Args) ->
+    [InputFile, OutputFile] = Args,
+    Input = readFile(InputFile),
+    Distances = runDistribution(Input),
     writeFile(OutputFile, Distances, 1).
