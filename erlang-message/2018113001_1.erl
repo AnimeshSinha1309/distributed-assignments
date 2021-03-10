@@ -40,13 +40,12 @@ node(ID, MasterPID) ->
 node(ID, MasterPID, NextPID) ->
     receive
       {token, Val, SenderID, OutputFile} ->
-	  io:format("~p got a token ~p from sender ~p~n",
-		    [ID, Val, SenderID]),
 	  {ok, Device} = file:open(OutputFile, [append]),
-	  io:format(Device, "~p got a token ~p from sender ~p~n",
+	  io:format(Device,
+		    "Process ~p received token ~p from process "
+		    "~p.~n",
 		    [ID, Val, SenderID]),
 	  file:close(Device),
-	  io:format("~p released~n", [ID]),
 	  NextPID ! {token, Val, ID, OutputFile},
 	  MasterPID ! {self(), exit}
     end.

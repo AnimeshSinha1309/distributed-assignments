@@ -96,10 +96,10 @@ writeLines(Device, Distances, CurrentNodeID) ->
 	   writeLines(Device, Tail, CurrentNodeID + 1)
     end.
 
-main(Args) ->
+run(Args) ->
     [InputFile, OutputFile] = Args,
     Input = readFile(InputFile),
-    Distances = bellmanFord(Input),
+    Distances = runDistribution(Input),
     writeFile(OutputFile, Distances, 1).
 
 % Distributed Bellman Ford Algorithm
@@ -173,7 +173,7 @@ runDistribution(Graph) ->
 			    ValN),
     Distances.
 
-run(Args) ->
+main(Args) ->
     [InputFile, OutputFile] = Args,
     Input = readFile(InputFile),
     Distances = runDistribution(Input),
