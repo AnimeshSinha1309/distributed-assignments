@@ -18,6 +18,38 @@ use tarpc::{
     tokio_serde::formats::Json,
 };
 
+use lazy_static::lazy_static;
+use std::sync::Mutex;
+use std::collections::HashMap;
+use rs_graph::{Net, Builder, EdgeVec};
+use rs_graph::mst::prim;
+
+
+lazy_static! {
+    static ref GRAPH: Mutex<HashMap<String, Graph>> = Mutex::new(HashMap::new());
+}
+
+struct Graph {
+    n: i32,
+}
+
+impl Graph {
+    fn new(num_nodes: i32) -> Graph {
+        Graph {
+            n: num_nodes
+        }
+    }
+
+    fn add_edge(&self, u: i32, v: i32, w: i32) {
+        println!("Adding edge");
+    }
+
+    fn get_mst(&self) -> i32 {
+        println!("Getting MST");
+        self.n
+    }
+}
+
 // This is the type that implements the generated World trait. It is the business logic
 // and is used to start the server.
 #[derive(Clone)]
@@ -28,16 +60,33 @@ impl World for HelloServer {
     async fn hello(self, _: context::Context, name: String) -> String {
         format!("Hello, {}! You are connected from {:?}.", name, self.0)
     }
+    async fn new_graph(self, _: context::Context, name: String, num_nodes: i32) {
+        GRAPH.lock().unwrap().insert(name, Graph::new(num_nodes));
+    }
+    async fn add_edge(self, _: context::Context, name: String, u: i32, v: i32, w: i32) {
+        match GRAPH.lock().unwrap().get(&name) {
+            Some(graph) => graph.add_edge(u, v, w),
+            _ => (),
+        }
+    }
+    async fn get_mst(self, _: context::Context, name: String) -> i32 {
+        let mut weight = 0;
+        match GRAPH.lock().unwrap().get(&name) {
+            Some(graph) => weight = graph.get_mst(),
+            _ => weight = -1,
+        }
+        weight
+    }
 }
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
     env_logger::init();
 
-    let flags = App::new("Hello Server")
+    let flags = App::new("Graph Remote Calls")
         .version("0.1")
-        .author("Tim <tikue@google.com>")
-        .about("Say hello!")
+        .author("Animesh Sinha <animesh.sinha@research.iiit.ac.in>")
+        .about("Implements Prims MST as a remote procedure call.")
         .arg(
             Arg::with_name("port")
                 .short("p")

@@ -2,7 +2,7 @@
 name = "rust-rpc"
 version = "0.1.0"
 authors = ["Animesh Sinha <animeshsinha1309@gmail.com>"]
-edition = "2020"
+edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,6 +13,8 @@ env_logger = "0.8"
 futures = "0.3"
 serde = { version = "1.0" }
 tokio = { version = "1", features = ["full"] }
+rs-graph = "0.15.0"
+lazy_static = "1.4.0"
 
 [lib]
 name = "service"

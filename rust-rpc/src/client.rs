@@ -54,8 +54,12 @@ async fn main() -> io::Result<()> {
     // args as defined, with the addition of a Context, which is always the first arg. The Context
     // specifies a deadline and trace information which can be helpful in debugging requests.
     let hello = client.hello(context::current(), name).await?;
-
     println!("{}", hello);
+
+    client.new_graph(context::current(), "ani".to_string(), 312).await?;
+    client.add_edge(context::current(), "ani".to_string(), 2, 3, 1).await?;
+    let num = client.get_mst(context::current(), "ani".to_string()).await?;
+    println!("{}", num);
 
     Ok(())
 }
