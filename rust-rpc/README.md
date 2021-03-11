@@ -22,6 +22,7 @@ Ensure that you have rust installed. If not, the following command will setup Ru
 
 `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 
+Do ensure that you are in the current directory.
 
 On the server side, run the following command:
 

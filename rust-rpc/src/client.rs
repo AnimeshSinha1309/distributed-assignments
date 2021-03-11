@@ -18,6 +18,7 @@ async fn main() -> io::Result<()> {
         .about("Implements Prims MST as a remote procedure call.")
         .arg(
             Arg::with_name("server_addr")
+                .index(1)
                 .long("server_addr")
                 .value_name("ADDRESS")
                 .help("Sets the server address to connect to.")
@@ -42,8 +43,7 @@ async fn main() -> io::Result<()> {
     // The client has an RPC method for each RPC defined in the annotated trait. It takes the same
     // args as defined, with the addition of a Context, which is always the first arg. The Context
     // specifies a deadline and trace information which can be helpful in debugging requests.
-    let hello = client.hello(context::current(), name).await?;
-    println!("{}", hello);
+    println!("{}", client.hello(context::current(), "Client".to_string()).await?);
 
     let stdin = io::stdin();
     loop {
@@ -66,7 +66,11 @@ async fn main() -> io::Result<()> {
         } else if tokens[0] == "get_mst" {
             let name: String = tokens[1].to_string();
             let num: usize = client.get_mst(context::current(), name).await?;
-            println!("{}", num);
+            if num == 0 || num == 999999999 {
+                println!("-1");
+            } else {
+                println!("{}", num);
+            }
         } else if tokens[0] == "get_details" {
             let name: String = tokens[1].to_string();
             let result: String = client.get_details(context::current(), name).await?;

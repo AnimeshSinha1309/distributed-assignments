@@ -114,6 +114,7 @@ async fn main() -> io::Result<()> {
         .about("Implements Prims MST as a remote procedure call.")
         .arg(
             Arg::with_name("port")
+                .index(1)
                 .short("p")
                 .long("port")
                 .value_name("NUMBER")
