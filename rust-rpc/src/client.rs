@@ -64,8 +64,7 @@ async fn main() -> io::Result<()> {
             break;
         }
         let tokens: Vec<&str> = inp.trim().split(" ").collect();
-        if tokens[0] == "add_graph" {
-            println!("{:?}", tokens);
+        if tokens[0] == "new_graph" {
             let name: String = tokens[1].to_string();
             let num_nodes: usize = tokens[2].parse::<usize>().unwrap();
             client.new_graph(context::current(), name, num_nodes).await?;
@@ -83,6 +82,8 @@ async fn main() -> io::Result<()> {
             let name: String = tokens[1].to_string();
             let result: String = client.get_details(context::current(), name).await?;
             println!("{}", result);
+        } else if tokens[0] == "q" {
+            break;
         }
     }
 
