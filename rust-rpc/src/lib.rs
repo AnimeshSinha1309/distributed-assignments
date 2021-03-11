@@ -10,7 +10,8 @@
 pub trait World {
     /// Returns a greeting for name.
     async fn hello(name: String) -> String;
-    async fn new_graph(name: String, num_nodes: i32);
-    async fn add_edge(name: String, u: i32, v: i32, w: i32);
-    async fn get_mst(name: String) -> i32;
+    async fn new_graph(name: String, num_nodes: usize);
+    async fn add_edge(name: String, u: usize, v: usize, w: usize);
+    async fn get_mst(name: String) -> usize;
+    async fn get_details(name: String) -> String;
 }

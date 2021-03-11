@@ -56,10 +56,35 @@ async fn main() -> io::Result<()> {
     let hello = client.hello(context::current(), name).await?;
     println!("{}", hello);
 
-    client.new_graph(context::current(), "ani".to_string(), 312).await?;
-    client.add_edge(context::current(), "ani".to_string(), 2, 3, 1).await?;
-    let num = client.get_mst(context::current(), "ani".to_string()).await?;
-    println!("{}", num);
+    let stdin = io::stdin();
+    loop {
+        let mut inp = String::new();
+        stdin.read_line(&mut inp).unwrap();
+        if inp.is_empty() {
+            break;
+        }
+        let tokens: Vec<&str> = inp.trim().split(" ").collect();
+        if tokens[0] == "add_graph" {
+            println!("{:?}", tokens);
+            let name: String = tokens[1].to_string();
+            let num_nodes: usize = tokens[2].parse::<usize>().unwrap();
+            client.new_graph(context::current(), name, num_nodes).await?;
+        } else if tokens[0] == "add_edge" {
+            let name: String = tokens[1].to_string();
+            let u: usize = tokens[2].parse::<usize>().unwrap();
+            let v: usize = tokens[3].parse::<usize>().unwrap();
+            let w: usize = tokens[4].parse::<usize>().unwrap();
+            client.add_edge(context::current(), name, u, v, w).await?;
+        } else if tokens[0] == "get_mst" {
+            let name: String = tokens[1].to_string();
+            let num: usize = client.get_mst(context::current(), name).await?;
+            println!("{}", num);
+        } else if tokens[0] == "get_details" {
+            let name: String = tokens[1].to_string();
+            let result: String = client.get_details(context::current(), name).await?;
+            println!("{}", result);
+        }
+    }
 
     Ok(())
 }

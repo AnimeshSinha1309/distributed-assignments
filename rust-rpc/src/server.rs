@@ -30,23 +30,42 @@ lazy_static! {
 }
 
 struct Graph {
-    n: i32,
+    n: usize,
+    edges: Vec<(usize, usize, usize)>
 }
 
 impl Graph {
-    fn new(num_nodes: i32) -> Graph {
+    fn new(num_nodes: usize) -> Graph {
         Graph {
-            n: num_nodes
+            n: num_nodes,
+            edges: Vec::new(),
         }
     }
 
-    fn add_edge(&self, u: i32, v: i32, w: i32) {
-        println!("Adding edge");
+    fn add_edge(&mut self, u: usize, v: usize, w: usize) {
+        self.edges.push((u - 1, v - 1, w));
     }
 
-    fn get_mst(&self) -> i32 {
-        println!("Getting MST");
-        self.n
+    fn details(&self) -> String {
+        format!("Graph has {:?} nodes with {:?} as it's edges.", self.n, self.edges)
+    }
+
+    fn get_mst(&self) -> usize {
+        let mut g = Net::new();
+        let mut weights: Vec<usize> = vec![];
+
+        let nodes = g.add_nodes(self.n);
+        for &(u,v,w) in self.edges.iter() {
+            g.add_edge(nodes[u], nodes[v]);
+            weights.push(w);
+        }
+        let weights: EdgeVec<_> = weights.into();
+        let tree = prim(&g, &weights);
+        let mut sum = 0;
+        for e in tree { 
+            sum += weights[e]; 
+        }
+        sum
     }
 }
 
@@ -60,20 +79,26 @@ impl World for HelloServer {
     async fn hello(self, _: context::Context, name: String) -> String {
         format!("Hello, {}! You are connected from {:?}.", name, self.0)
     }
-    async fn new_graph(self, _: context::Context, name: String, num_nodes: i32) {
+    async fn new_graph(self, _: context::Context, name: String, num_nodes: usize) {
         GRAPH.lock().unwrap().insert(name, Graph::new(num_nodes));
     }
-    async fn add_edge(self, _: context::Context, name: String, u: i32, v: i32, w: i32) {
-        match GRAPH.lock().unwrap().get(&name) {
+    async fn add_edge(self, _: context::Context, name: String, u: usize, v: usize, w: usize) {
+        match GRAPH.lock().unwrap().get_mut(&name) {
             Some(graph) => graph.add_edge(u, v, w),
             _ => (),
+        };
+    }
+    async fn get_details(self, _: context::Context, name: String) -> String {
+        match GRAPH.lock().unwrap().get_mut(&name) {
+            Some(graph) => graph.details(),
+            _ => "Graph not found".to_string(),
         }
     }
-    async fn get_mst(self, _: context::Context, name: String) -> i32 {
-        let mut weight = 0;
+    async fn get_mst(self, _: context::Context, name: String) -> usize {
+        let weight;
         match GRAPH.lock().unwrap().get(&name) {
             Some(graph) => weight = graph.get_mst(),
-            _ => weight = -1,
+            _ => weight = 999999999,
         }
         weight
     }
