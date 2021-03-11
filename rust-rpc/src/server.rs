@@ -21,29 +21,71 @@ use tarpc::{
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 use std::collections::HashMap;
-use rs_graph::{Net, Builder, EdgeVec};
-use rs_graph::mst::prim;
+use std::collections::BTreeSet;
 
 
 lazy_static! {
     static ref GRAPH: Mutex<HashMap<String, Graph>> = Mutex::new(HashMap::new());
 }
 
+struct DSU {
+    num_components: usize,
+    parents: Vec<usize>,
+    sizes: Vec<usize>
+}
+
+impl DSU {
+    fn new(n: usize) -> Self {
+        Self {
+            num_components: n,
+            parents: (0..n).collect(),
+            sizes: vec![1; n]
+        }
+    }
+
+    fn find(&self, x: usize) -> usize {
+        if self.parents[x] == x {
+            x
+        } else {
+            self.find(self.parents[x])
+        }
+    }
+
+    fn merge(&mut self, u: usize, v: usize) -> bool {
+        let mut node_u = self.find(u);
+        let mut node_v = self.find(v);
+        if self.sizes[v] < self.sizes[u] {
+            let node_t = node_u;
+            node_u = node_v;
+            node_v = node_t;
+        }
+        if node_u == node_v {
+            false
+        } else {
+            self.num_components -= 1;
+            self.parents[node_u] = node_v;
+            self.sizes[node_v] += self.sizes[node_u];
+            self.sizes[node_u] = 0;
+            true
+        }
+    }
+}
+
 struct Graph {
     n: usize,
-    edges: Vec<(usize, usize, usize)>
+    edges: BTreeSet<(usize, usize, usize)>
 }
 
 impl Graph {
     fn new(num_nodes: usize) -> Graph {
         Graph {
             n: num_nodes,
-            edges: Vec::new(),
+            edges: BTreeSet::new(),
         }
     }
 
     fn add_edge(&mut self, u: usize, v: usize, w: usize) {
-        self.edges.push((u - 1, v - 1, w));
+        self.edges.insert((w, u - 1, v - 1));
     }
 
     fn details(&self) -> String {
@@ -51,21 +93,14 @@ impl Graph {
     }
 
     fn get_mst(&self) -> usize {
-        let mut g = Net::new();
-        let mut weights: Vec<usize> = vec![];
-
-        let nodes = g.add_nodes(self.n);
-        for &(u,v,w) in self.edges.iter() {
-            g.add_edge(nodes[u], nodes[v]);
-            weights.push(w);
+        let mut dsu: DSU = DSU::new(self.n);
+        let mut ans: usize = 0;
+        for &(w, u, v) in self.edges.iter() {
+            if dsu.merge(u, v) {
+                ans += w
+            }
         }
-        let weights: EdgeVec<_> = weights.into();
-        let tree = prim(&g, &weights);
-        let mut sum = 0;
-        for e in tree { 
-            sum += weights[e]; 
-        }
-        sum
+        if dsu.num_components == 1 { ans } else { usize::max_value() }
     }
 }
 
@@ -73,6 +108,7 @@ impl Graph {
 // and is used to start the server.
 #[derive(Clone)]
 struct HelloServer(SocketAddr);
+
 
 #[tarpc::server]
 impl World for HelloServer {
@@ -98,7 +134,7 @@ impl World for HelloServer {
         let weight;
         match GRAPH.lock().unwrap().get(&name) {
             Some(graph) => weight = graph.get_mst(),
-            _ => weight = 999999999,
+            _ => weight = usize::max_value(),
         }
         weight
     }
@@ -114,7 +150,6 @@ async fn main() -> io::Result<()> {
         .about("Implements Prims MST as a remote procedure call.")
         .arg(
             Arg::with_name("port")
-                .index(1)
                 .short("p")
                 .long("port")
                 .value_name("NUMBER")

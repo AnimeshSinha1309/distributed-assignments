@@ -341,17 +341,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num-iter"
-version = "0.1.42"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2021c8337a54d21aca0d59a92577a029af9431cb59b909b03252b9c164fad59"
-dependencies = [
- "autocfg",
- "num-integer",
- "num-traits",
-]
-
-[[package]]
 name = "num-traits"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -538,16 +527,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5eb417147ba9860a96cfe72a0b93bf88fee1744b5636ec99ab20c1aa9376581"
 
 [[package]]
-name = "rs-graph"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6dd3aa6f924454da926957856fcc14f61e382e6d6deffe859751f2d31ef5ef4a"
-dependencies = [
- "num-iter",
- "num-traits",
-]
-
-[[package]]
 name = "rust-rpc"
 version = "0.1.0"
 dependencies = [
@@ -555,7 +534,6 @@ dependencies = [
  "env_logger",
  "futures",
  "lazy_static",
- "rs-graph",
  "serde",
  "tarpc",
  "tokio",

@@ -18,7 +18,6 @@ async fn main() -> io::Result<()> {
         .about("Implements Prims MST as a remote procedure call.")
         .arg(
             Arg::with_name("server_addr")
-                .index(1)
                 .long("server_addr")
                 .value_name("ADDRESS")
                 .help("Sets the server address to connect to.")
@@ -53,7 +52,7 @@ async fn main() -> io::Result<()> {
             break;
         }
         let tokens: Vec<&str> = inp.trim().split(" ").collect();
-        if tokens[0] == "new_graph" {
+        if tokens[0] == "add_graph" {
             let name: String = tokens[1].to_string();
             let num_nodes: usize = tokens[2].parse::<usize>().unwrap();
             client.new_graph(context::current(), name, num_nodes).await?;
@@ -66,7 +65,7 @@ async fn main() -> io::Result<()> {
         } else if tokens[0] == "get_mst" {
             let name: String = tokens[1].to_string();
             let num: usize = client.get_mst(context::current(), name).await?;
-            if num == 0 || num == 999999999 {
+            if num == usize::max_value() {
                 println!("-1");
             } else {
                 println!("{}", num);
